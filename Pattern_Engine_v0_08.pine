@@ -1,5 +1,5 @@
 //@version=6
-indicator("Pattern Engine v0.01", overlay=true, max_labels_count=500, max_lines_count=500)
+indicator("Pattern Engine v0.10", overlay=true, max_labels_count=500, max_lines_count=500)
 
 //=============================================================================
 // INPUTS
@@ -29,22 +29,27 @@ bool isAccumulation = volume > volMA * volumeMultiplier and close > open
 // CP1 VARIABLES
 //=============================================================================
 
-var bool cp1Found = false
-var int cp1PivotBar = na
-var float cp1PivotPrice = na
-var int cp1BarsAgo = na
+var bool  cp1Found       = false
+var int   cp1PivotBar    = na
+var float cp1PivotPrice  = na
+var int   cp1BarsAgo     = na
 var float cp1HighestHigh = na
-var int cp1HighestBar = na
-var float cp1GainPct = na
-var int cp1MoveBars = na
-var bool cp1Pass = false
-var bool gainPass = false
-var bool barsPass = false
-var bool cp1Locked = false
-var int cp1AccumDays = 0
+var int   cp1HighestBar  = na
+var float cp1GainPct     = na
+var int   cp1MoveBars    = na
+var bool  cp1Pass        = false
+var bool  cp1GainPass    = false
+var bool  cp1BarsPass    = false
+var bool  cp1Locked      = false
+var int   cp1AccumDays   = 0
+
+cp1GainPass := cp1GainPct >= minGainPct
+cp1BarsPass := cp1MoveBars <= maxBars
+
+cp1Pass := cp1GainPass and cp1BarsPass
 
 //=============================================================================
-// FIND LATEST CONFIRMED PIVOT
+// CP1 ENGINE
 //=============================================================================
 
 if not na(pivotLow)
@@ -59,38 +64,18 @@ if not na(pivotLow)
 
 if cp1Found
     cp1BarsAgo := bar_index - cp1PivotBar
-
-    //if high > cp1HighestHigh
-    //    cp1HighestHigh := high
-    //    cp1HighestBar := bar_index
-
-    if cp1Found and not cp1Locked
-        if high > cp1HighestHigh
+    if not cp1Locked and high > cp1HighestHigh
             //cp1HighestHigh := high
             //cp1HighestBar := bar_index
             cp1HighestHigh := high[pivotStrength]
             cp1HighestBar := bar_index - pivotStrength            
 
-    //if cp1Found and not cp1Locked
-    //    if isAccumulation
-    //        cp1AccumDays += 1
-
     if cp1Found and not cp1Locked
         if isAccumulation
             cp1AccumDays += 1
 
-    //cp1GainPct := ((cp1HighestHigh - cp1PivotPrice) / cp1PivotPrice) * 100
-    //cp1MoveBars := cp1HighestBar - cp1PivotBar    
-
     cp1GainPct := ((cp1HighestHigh - cp1PivotPrice) / cp1PivotPrice) * 100
     cp1MoveBars := cp1HighestBar - cp1PivotBar
-
-    //cp1Pass := cp1GainPct >= minGainPct and cp1MoveBars <= maxBars
-
-    //gainPass := cp1GainPct >= minGainPct
-    //barsPass := cp1MoveBars <= maxBars
-
-    //cp1Pass := gainPass and barsPass
 
     gainPass := cp1GainPct >= minGainPct
     barsPass := cp1MoveBars <= maxBars
@@ -99,8 +84,6 @@ if cp1Found
 
     if cp1Pass
         cp1Locked := true
-
-    //cp1AccumDays := 0    
 
 //=============================================================================
 // PLACEHOLDER
@@ -111,22 +94,6 @@ if cp1Found
 //=============================================================================
 // VISUALS
 //=============================================================================
-
-//plotshape(not na(pivotLow),
-//     title="Pivot Low",
-//     style=shape.circle,
-//     color=color.lime,
-//     location=location.belowbar,
-//     offset=-pivotStrength,
-//     size=size.tiny)
-
-//plotshape(
-//     cp1Pass,
-//     title="CP1 Pass",
-//     style=shape.flag,
-//     location=location.abovebar,
-//     color=color.green,
-//     size=size.small)
 
 recentPivot = ta.barssince(not na(pivotLow)) < 50
 
@@ -156,19 +123,9 @@ plotshape(isAccumulation,
      location=location.belowbar,
      size=size.tiny)
 
-//label.new(
-//     cp1HighestBar,
-//     cp1HighestHigh,
-//     "CP1 PASS\nGain: " + str.tostring(cp1GainPct, "#.0") + "%\nBars: " + str.tostring(cp1MoveBars),
-//     style=label.style_label_down,
-//     color=color.green,
-//     textcolor=color.white)    
-
 //=============================================================================
 // DASHBOARD
 //=============================================================================
-
-//var table t = table.new(position.top_right, 2, 8, border_width=1)
 
 var table t = table.new(position.top_right, 2, 12, border_width=1)
 
@@ -186,31 +143,8 @@ if barstate.islast and showTable
     table.cell(t, 0, 4, "Bars Ago", text_color=color.white)
     table.cell(t, 1, 4, cp1Found ? str.tostring(cp1BarsAgo) : "-", text_color=color.white)
 
-    //table.cell(t, 0, 5, "Volume", text_color=color.white)
-    //table.cell(t, 1, 5, isAccumulation ? "YES" : "NO", text_color=color.white)
-
-    //table.cell(t, 0, 6, "Status", text_color=color.white)
-    //table.cell(t, 1, 6, "v0.02", text_color=color.white)
-
-    //table.cell(t, 0, 5, "Highest High", text_color=color.white)
-    //table.cell(t, 1, 5, cp1Found ? str.tostring(cp1HighestHigh, "#.00") : "-", text_color=color.white)
-
-    //table.cell(t, 0, 6, "High Bar", text_color=color.white)
-    //table.cell(t, 1, 6, cp1Found ? str.tostring(cp1HighestBar) : "-", text_color=color.white)
-
-    //table.cell(t, 0, 7, "Status", text_color=color.white)
-    //table.cell(t, 1, 7, "v0.03", text_color=color.white)
-
     table.cell(t, 0, 5, "Highest High", text_color=color.white)
     table.cell(t, 1, 5, str.tostring(cp1HighestHigh, "#.00"), text_color=color.white)
-
-    //table.cell(t, 0, 6, "Gain %", text_color=color.white)
-    //table.cell(t, 1, 6, str.tostring(cp1GainPct, "#.0"), text_color=color.white)
-
-    //table.cell(t, 0, 7, "Move Bars", text_color=color.white)
-    //table.cell(t, 1, 7, str.tostring(cp1MoveBars), text_color=color.white)
-
-    // Gain %
 
     table.cell(t, 0, 6, "Gain %", text_color=color.white)
 
@@ -265,15 +199,12 @@ if barstate.islast and showTable
         str.tostring(cp1AccumDays),
         text_color=color.white)
 
+	table.cell(t, 0, 11, "Accum Bar", text_color=color.white)
 
-table.cell(t, 0, 11, "Accum Bar", text_color=color.white)
-
-table.cell(
-    t,
-    1,
-    11,
-    isAccumulation ? "YES" : "NO",
-    text_color=color.white,
-    bgcolor=isAccumulation ? color.new(color.blue, 0) : color.new(color.red, 0))
-
-
+	table.cell(
+		t,
+		1,
+		11,
+		isAccumulation ? "YES" : "NO",
+		text_color=color.white,
+		bgcolor=isAccumulation ? color.new(color.blue, 0) : color.new(color.red, 0))
